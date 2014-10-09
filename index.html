@@ -1,0 +1,947 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+<style>
+
+<head>
+	<title>Polyglottis</title>
+</head>
+/*.chart rect {
+  fill: steelblue;
+}
+
+.chart text {
+  fill: white;
+  font: 10px sans-serif;
+  text-anchor: end;
+}*/
+
+</style>
+<link rel="stylesheet" href="style.css">
+<script src = "savePlaylist.js"></script>
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script>
+<script src="http://cdnjs.cloudflare.com/ajax/libs/jquery-backstretch/2.0.4/jquery.backstretch.min.js"></script>
+<script type="text/javascript" src="/scripts/bluebird.js"></script>
+<!-- <script src="http://cdnjs.cloudflare.com/ajax/libs/jquery-backstretch/2.0.4/jquery.backstretch.min.js"></script> -->
+<!-- <body onload="doit()"> -->
+<body >
+<header>
+	<div class="container" >
+		<!-- <a href = "http://musixmatch.com/" style="display:inline"><img src="http://musixmatch.com/img/mxm_logo_white.png" style = "padding-left: 30px;" width="135" alt="Musixmatch" id="Musixmatch"/></a> -->
+		<img src="http://musixmatch.com/img/mxm_logo_white.png" style = "padding-left: 0%;" width="135" alt="Musixmatch" id="Musixmatch"/>
+		<p style = "display:inline; padding-left: 13.7%;font-size:19px;" >Polyglottis: Create playlists for learning foreign languages<!-- Polyglot: playlists to help learn foreign languages --></p>
+		<a href="http://research.musixmatch.com/post/99306796630/polyglottis-playlists-for-learning-foreign-languages" style = "display:inline; padding-right: 18.6%;
+padding-top: 5px; font-size:16px;">About</a>
+	</div>
+</header>
+<!--  <h1>Musixmatch curator</h1>
+<h2>Create a Spotify playlist of songs with lyrics containing searched word/s or with lyrics similar to a track</h2> -->
+ <!-- 	<form name="form1" id = 'searchForm' method="get">
+		
+	</form>
+
+ -->
+ 	<!-- <div id="imageContainer">	 -->
+ 		<input type="search" id="username" placeholder="Insert your Duolingo username" />
+ 		
+ 		<div id = 'genreHolder' style = "display:none"><p id = 'genreText'> Select genre/s:</p><select multiple="multiple" id="genre" placeholder="Select genre"  /></select></div>
+
+	<!-- <select id = "searchType"> -->
+  		<!-- <option value="words" >Search with 'Words'</option>
+  		<option value="track">Search with 'Track-Artist'</option>
+  		<option value="mxmId" disabled>MusixmatchID</option> -->
+	<!-- </select> -->
+ 	
+ <!-- 	<div id = "playlistTypeContainer" style = "display:none">
+ 		More covers songs<input type="range"  id="cover_songs" min="0" max="15" />Less cover songs
+	</div> -->
+
+		<!-- <div id = "buttonContainer" style = "display:none">
+ 			<input type="button" value="Get Images" id = "getImages">
+ 		</div> -->
+ 	
+<!--  	<div style = "display:none">
+			Similarity to query: less<input type="range"  id="max_query_terms" name="max_query_terms" min="1" max="30" />more
+	</div>
+	<div style = "display:none">
+			Number of tracks to : more<input type="range"  id="min_term_freq" name="min_term_freq" min="1" max="30" />less
+	</div> -->
+		
+		<div id = "buttonContainer">
+ 		<input type="button" value="Make playlist" id = "makePlaylist" style = "display:none"></div>
+ 		<div id = "status" style = "display:none"></div>
+
+		<div id = "progress" style = "display:none" ><img src = 'ajax-loader.gif'> </div>
+		<div id = "SpotifyWidget" > </div>
+		<div id = "metadata" style = "display:none"></div>
+ 		<div> <input type="button" value="Save This Playlist To Spotify" id = "SpotifySave" style = "display:none"> </div>
+ 		
+
+		<!-- <progress id = "ProgressBar" value="0" max="100" style = ""></progress> -->
+<!-- 	<div> <input type="button" value="Save This Playlist To Spotify" id = "SpotifySave" style = "display:none"> </div> -->
+		
+	<!-- <div id = "ImageDisplay" style = "display:none" ><img id = "Image"> </div> -->
+<!-- <footer>
+	Uses <a href="https://developer.musixmatch.com/">Musixmatch API</a>,<a href="https://github.com/KartikTalwar/Duolingo">Duolingo (unofficial) API</a> <a href="https://developer.spotify.com/web-api/">Spotify web API</a>, <a href="https://developer.spotify.com/technologies/widgets/">Spotify widgets</a>. Contact the author at <a href="https://twitter.com/neotheoen">@neotheoen</a>.
+</footer>
+ -->	<!-- </div> -->
+<!-- 		<div id = "audioDiv" style = "display:inline">
+			<audio controls id = "aplayer">
+	  			<source src="http://ec2-54-194-130-174.eu-west-1.compute.amazonaws.com/media/13777326/13777326.mp3" type="audio/mpeg">
+			</audio>
+		</div>
+		<div id = 'lyricsDisplay'></div> -->
+</body>
+<!-- <svg class="chart"></svg> -->
+<!-- <script src="http://jpillora.com/xdomain/dist/0.6/xdomain.min.js" master="localhost:8888"></script> -->
+<!-- <script src="jquery-1.11.1.min.js"></script> -->
+<script src="stopwords.js"></script>
+<script src="Snowball.min.js"></script>
+<script src="music_genre_list.js"></script>
+
+<script>
+$("#username").focus();
+// document.getElementById('mxmTrackSearch').focus();
+searchQuery = document.getElementById('username')
+genre_id = document.getElementById('genre')
+// $.backstretch('logo.jpg')
+// searchForm = document.getElementById('searchForm')
+// searchType = document.getElementById('searchType')
+// min_term_freq = document.getElementById('min_term_freq')
+//console.log(min_term_freq.value)
+//max_query_terms = document.getElementById('max_query_terms')
+//SpotifySave = document.getElementById('SpotifySave')
+GetImages  = document.getElementById('getImages')
+// language = document.getElementById('language')
+var language = {}
+MakePlaylist = document.getElementById('makePlaylist')
+//PlaylistTypeContainer = document.getElementById('playlistTypeContainer')
+//covers = document.getElementById('cover_songs')
+var mxmAPI_base = 'https://api.musixmatch.com/ws/1.1/'
+var apiKey = 'd8951a826384c648324e206c942b5cce'
+var tagAPI_base = 'http://glacial-hollows-8890.herokuapp.com/lyrics_analysis/v1.0'
+var chordAPI_base = 'http://ec2-54-194-213-147.eu-west-1.compute.amazonaws.com/chord_analysis/v1.0/chords?trackID='//'http://ec2-54-194-130-174.eu-west-1.compute.amazonaws.com/chord_analysis/v1.0/chords?trackID='
+var chordAPIUrl = 'http://ec2-54-194-213-147.eu-west-1.compute.amazonaws.com/media' //'http://ec2-54-194-130-174.eu-west-1.compute.amazonaws.com/media'
+var mxmAPI_base_new = 'http://ec2-54-165-48-238.compute-1.amazonaws.com:8080/ws/1.1/macro.subtitles.get?app_id=musixmatch-rd-v1.0&usertoken=74b62c7030d940b2c0e9d3cc97a42f4bc531e9501479cd9e' //'http://apic.musixmatch.com/ws/1.1/'
+var echonest_base = 'http://developer.echonest.com/api/v4/track/profile?api_key='
+var echonest_song_base = 'http://developer.echonest.com/api/v4/song/profile?api_key='
+var echonest_search_base = 'http://developer.echonest.com/api/v4/song/search?api_key='
+var echonest_api_key = 'UUZDTANXIMNN98YW6'
+var musicbrainz_base = 'http://musicbrainz.org/ws/2/recording/?query=isrc:'
+var spotify_auth_base = 'https://accounts.spotify.com/authorize'
+var spotify_client_ID = '14fb55b1df36454793caa07ab8abefe6'
+var spotify_client_secret = 'cf72548f86e8493d8aa38cc881a63ee4'
+var duolingoAPI_base = 'http://ec2-54-77-238-210.eu-west-1.compute.amazonaws.com/duolingoHack/v1.0/'
+
+var have_valid_playlist = false
+var username = ''
+function getJSON(url) 
+{
+	var get_promise = $.getJSON(url);
+	//console.log(url)
+	return get_promise.then(JSON.stringify).then(JSON.parse);
+}
+
+function getLyrics(track) 
+{
+	var lyrics_URI = mxmAPI_base + 'track.lyrics.get?apikey=b463ed1270b71853d56be5bd776a9b4a&track_id=' + track.track.track_id + '&format=jsonp&callback=?'
+	lyrics_URI = encodeURI(lyrics_URI)
+	// console.log(lyrics_URI)
+	//var get_promise = $.getJSON(lyrics_URI);
+	//console.log(url)
+	
+	// console.log(trackWithLyrics)
+	return new Promise(function(resolve,reject)
+	{
+		getJSON(lyrics_URI).then(function(response)
+		{
+			// console.log(response)
+			trackWithLyrics = {}
+			trackWithLyrics['lyrics'] = response
+			trackWithLyrics['track'] = track.track
+			resolve(trackWithLyrics)
+		});
+	})
+		//console.log(url)
+		//return getJSON(url);
+}
+
+function getJSONTrackRelated(track_id) 
+{
+	var url = mxmAPI_base + 'track.related.get?apikey=' + apiKey +'&page_size=100&g_commontrack=1&max_query_terms'+ max_query_terms.value + '&min_term_freq=' + min_term_freq.value + '&track_id=' + track_id +'&format=jsonp&callback=?'
+	var url = encodeURI(url)
+	var get_promise = $.getJSON(url);
+	//console.log(url)
+	return get_promise.then(JSON.stringify).then(JSON.parse);
+		//console.log(url)
+		//return getJSON(url);
+}
+
+function checkRepetition(track_list, track)
+{
+	return track_list.some(function(current_track)
+	{
+		if (current_track.artist_name == track.artist_name)
+		{
+			if (current_track.track_name == track.track_name) 
+			{
+				return true
+			}
+		}
+		//return false
+	})
+}
+
+function generatePlaylist(wrds,language_code, leeway) //enter URI which has tracklist to build playlist of related tracks. search_with_words is a flag to accomodate different kind of JSON response structure fetched from the seed_URI
+{
+	words = new Array()
+	lyricWords = new Array()
+	console.log(typeof(language.value[0]))
+	lan = language.value[0]
+	stpWords = stopwords[(language.value[0]).toLowerCase()]
+	// console.log(stopwords)
+	genre_id = document.getElementById('genre')
+	// console.log(genre_id.value)
+	console.log(genre_id.selectedOptions.length)
+	var stemmer = new Snowball(language.value[0])
+
+	wrds.forEach(function(word)
+	{
+		if(stpWords.indexOf(word.toLocaleLowerCase()) == -1)
+		{
+			// words.push(word.toLocaleLowerCase())
+			stemmer.setCurrent(word.toLocaleLowerCase())
+			stemmer.stem()
+			words.push(stemmer.getCurrent())
+		}
+	})
+
+	final_playlist_ids = new Array()
+	final_playlist_tracks = new Array()
+	seed_track_ids = new Array()
+	url_list = new Array()
+	var repeatFlag = false
+	var seed_URI = mxmAPI_base + 'track.search?apikey=b463ed1270b71853d56be5bd776a9b4a&s_track_rating=desc&page_size=100&f_lyrics_language=' + language_code +'&f_music_genre_id=' //genre_id.value +'&format=jsonp&callback=?'
+	console.log(typeof(genre_id.selectedOptions))
+	
+	for (var i = 0; i < genre_id.selectedOptions.length; i++) 
+	{
+		console.log(genre_id.selectedOptions[i].value)
+		url_list.push(encodeURI(seed_URI + genre_id.selectedOptions[i].value +'&format=jsonp&callback=?'))
+	}
+
+	// seed_URI = encodeURI(seed_URI)
+	console.log(url_list)
+	leeway = 60
+	playlistLength = 0
+	console.log(words)
+	console.log(wrds)
+	//http://api.musixmatch.com/ws/1.1/track.search?apikey=b463ed1270b71853d56be5bd776a9b4a&f_lyrics_language=it&s_track_rating=desc
+	// document.getElementById("progress").style.display = "inline-block"
+	// $("#status").text("Searching musixmatch for songs with words in your vocabulary. You have " + wrds.length() + " words in your vocabulary")
+	$("#status").text("Searching tracks with words in your Duolingo vocabulary.")
+	return new Promise(function(resolve,reject)
+	{
+		Promise.all( url_list.map(getJSON)).then(function(responses)
+		{
+			//console.log(123)
+			//console.log(response)
+			console.log('here0')
+			Promise.all(responses.map(function(response)
+			{
+					console.log('here1')
+					// return new Promise(function(resolve,reject)
+					// {
+						console.log('here2')
+						if (response.message.header.status_code == 200)
+						{	
+							//console.log(3)
+							track_list = response.message.body.track_list
+							
+							if (track_list.length >=1)
+							{
+								return Promise.all(track_list.map(getLyrics)).then(function(values)
+								{
+									// console.log(values)
+									console.log(values)
+									values.forEach(function(trackObject)
+									{
+										//console.log(trackObject)
+										notFound = 0
+										if(trackObject.lyrics.message.header.status_code == 200)
+										{
+											var lyrics = trackObject.lyrics.message['body'].lyrics.lyrics_body
+											// lyrics = lyrics.replace(/↵/g,"")
+											// console.log(lyrics.replace(/↵/,''))
+											var lyricsP = lyrics.replace(/[\.,-\/#!$%\^&\*;:{}=\-_`~()]/g,"") //lyrics.replace('\n',' ')
+											var lyricsFinal = lyricsP.replace(/\s{2,}/g," ") //.replace('\t',' ')
+											lyricWords = lyricsFinal.replace(/\n/g,' ').split(' ')
+											lyricWords.every(function(Word)
+											{
+												//console.log(Word)
+												if(stpWords.indexOf(Word.toLocaleLowerCase()) == -1)
+												{
+													stemmer.setCurrent(Word.toLocaleLowerCase())
+													stemmer.stem()
+													// words.push(stemmer.getCurrent())
+													if(words.indexOf(stemmer.getCurrent()) == -1)
+													{
+														notFound = notFound +1
+													}
+													// console.log(Word)
+												}
+												if(notFound > leeway)
+												{
+												// console.log(notFound)
+													return false
+												}
+												if(notFound <= leeway)
+												{
+													return true
+												}
+											})
+											
+											if (notFound <= leeway) 
+											{
+												// console.log(notFound)
+												// console.log(lyricWords)
+												// console.log(words)
+												playlistLength = playlistLength +1
+												final_playlist_ids.push(trackObject.track.track_spotify_id)
+												// return true
+											}
+											// if(notFound > leeway)
+											// {
+											// 	return false
+											// }	
+										}
+									})	
+									// console.log(playlistLength)
+							
+								})
+							}
+							else
+							{
+								console.log('empty genre')
+								// resolve('asd')
+							}
+						}
+
+						// resolve(playlistLength)
+						// else
+						// {
+						// 	reject(Error(response.message))
+						// }
+						// console.log('here1')
+					// })
+			})).then(function(){
+				console.log('here3')
+				resolve(final_playlist_ids)})	
+				// console.log('here2')
+		})
+	})	
+}
+	
+function getMxmAndSpotifyIdFromMacro(response)
+{
+	//console.log(response.message.body.track)
+	return new Promise(function(resolve, reject){
+		if (response.message.header.status_code == 200) 
+		{
+			//console.log(response.message.body.track.track_id)
+			// var url = mxmAPI_base + 'track.related.get?apikey=' + apiKey +'&page_size=100&g_commontrack=1&max_query_terms='+ max_query_terms.value + '&min_term_freq=' + min_term_freq.value + '&track_id=' + response.message.body.track.track_id +'&format=jsonp&callback=?'
+			if (response.message.body.macro_calls["matcher.track.get"].message.header.status_code == 200) 
+			{
+				track_ids = new Array()
+				track_ids.push(response.message.body.macro_calls["matcher.track.get"].message.body.track.track_id, response.message.body.macro_calls["matcher.track.get"].message.body.track.track_spotify_id)
+				resolve (track_ids)
+				//track_ids.push(response.message.body.macro_calls["matcher.track.get"].message.body.track.track_id)
+				// track_ids.push(response.message.body.macro_calls["matcher.track.get"].message.body.track.track_mbid)
+				// //return getSpotifyIdFromMxmIdEchonest(response.message.body.macro_calls["matcher.track.get"].message.body.track.track_id).then(function(spotifyId){
+				// return getSpotifyIdFromMbidEchonest(response.message.body.macro_calls["matcher.track.get"].message.body.track.track_mbid).then(function(spotifyId){
+				// 	console.log(spotifyId)
+				// 	track_ids.push(spotifyId)
+				// 	resolve (track_ids)
+				// })
+				//console.log(response.message.body.macro_calls)
+				// track_ids.push(response.message.body.macro_calls["matcher.track.get"].message.body.track.track_id, response.message.body.macro_calls["matcher.track.get"].message.body.track.track_spotify_id)
+				
+
+			}
+			
+			else
+			{
+				reject (Error("No tracks found with this query. Try again please."))		
+			}
+		}
+		else
+		{
+			reject (Error("No tracks found with this query. Try again please."))
+		}	
+	})
+}			
+
+function getSpotifyIdFromMxmIdEchonest(mxmId)
+{
+	echonest_query_URI = echonest_song_base + echonest_api_key + '&id=musixmatch-WW:song:' + mxmId + '&bucket=id:spotify-WW&bucket=tracks' + '&format=jsonp&callback=?'//'&f_has_lyrics=1'
+	echonest_query_URI = encodeURI(echonest_query_URI)
+	console.log(echonest_query_URI)
+	return getJSON(echonest_query_URI).then(function(data){
+		//console.log(data)
+		//track_ids.push(data.response.songs[0].tracks[0].foreign_id.replace('spotify:track:',''))
+		//return Promise.
+		return data.response.songs[0].tracks[0].foreign_id.replace('spotify:track:','')
+		// return Promise.resolve(data.response.songs[0].tracks[0].foreign_id.replace('spotify:track:',''))
+	})
+}
+
+function getSpotifyIdFromMbidEchonest(mbId)
+{
+	echonest_query_URI = echonest_song_base + echonest_api_key + '&id=musicbrainz:song:' + mbId + '&bucket=id:spotify-WW&bucket=tracks' + '&format=jsonp&callback=?'//'&f_has_lyrics=1'
+	echonest_query_URI = encodeURI(echonest_query_URI)
+	console.log(echonest_query_URI)
+	return getJSON(echonest_query_URI).then(function(data){
+		//console.log(data)
+		//track_ids.push(data.response.songs[0].tracks[0].foreign_id.replace('spotify:track:',''))
+		//return Promise.
+		return data.response.songs[0].tracks[0].foreign_id.replace('spotify:track:','')
+		// return Promise.resolve(data.response.songs[0].tracks[0].foreign_id.replace('spotify:track:',''))
+	})
+}
+
+function countOccurences(a,i){ //count occurences of elements in array
+ var result = 0;
+ for(var o in a)
+  if(a[o] == i)
+   result++;
+ return result;
+}
+
+function getMxmAndSpotifyIdFromEchonest(response)
+{
+	//console.log(response.message.body.track)
+	return new Promise(function(resolve, reject){
+		if (response.response.status.message == 'Success')//200) 
+		{
+			//console.log(response.message.body.track.track_id)
+			// var url = mxmAPI_base + 'track.related.get?apikey=' + apiKey +'&page_size=100&g_commontrack=1&max_query_terms='+ max_query_terms.value + '&min_term_freq=' + min_term_freq.value + '&track_id=' + response.message.body.track.track_id +'&format=jsonp&callback=?'
+			try  
+			{
+				track_ids = new Array()
+				//console.log(response.message.body.macro_calls)
+				// track_ids.push(response.response.songs[0].foreign_ids[0].foreign_id.replace('musixmatch-WW:song:',''))
+				track_ids.push(response.message.body.macro_calls["matcher.track.get"].message.body.track.track_id, response.message.body.macro_calls["matcher.track.get"].message.body.track.track_spotify_id)
+				resolve (track_ids)
+				// echonest_query_URI = echonest_song_base + echonest_api_key + '&id=' + response.response.songs[0].foreign_ids[0].foreign_id + '&bucket=id:spotify-WW&bucket=tracks' + '&format=jsonp&callback=?'//'&f_has_lyrics=1'
+				// echonest_query_URI = encodeURI(echonest_query_URI)
+				// console.log(echonest_query_URI)
+				// return getJSON(echonest_query_URI).then(function(data){
+				// 	console.log(data)
+				// 	track_ids.push(data.response.songs[0].tracks[0].foreign_id.replace('spotify:track:',''))
+				// 	//return Promise.
+				// 	resolve(track_ids)
+				// })
+				// //mxmSearchId = response.songs.foreign_ids[0].replace('musixmatch-WW:song:','')
+				//http://developer.echonest.com/api/v4/song/profile?api_key=UUZDTANXIMNN98YW6&format=json&id=musixmatch-WW:song:15175339&bucket=id:spotify-WW&bucket=tracks
+				// track_ids.push(response.message.body.macro_calls["matcher.track.get"].message.body.track.track_id, response.message.body.macro_calls["matcher.track.get"].message.body.track.track_spotify_id)
+				
+
+			}
+			
+			catch(error)
+			{
+				reject (Error("No tracks found with this query. Try again please."))		
+			}
+		}
+		else
+		{
+			reject (Error("No tracks found with this query. Try again please."))
+		}	
+	})
+}
+function getTrackId(response)
+{
+	//console.log(response.message.body.track)
+	return new Promise(function(resolve, reject){
+		if (response.message.header.status_code == 200) 
+		{
+			console.log(response.message.body.track.track_id)
+			var url = mxmAPI_base + 'track.related.get?apikey=' + apiKey +'&page_size=100&g_commontrack=1&max_query_terms='+ max_query_terms.value + '&min_term_freq=' + min_term_freq.value + '&track_id=' + response.message.body.track.track_id +'&format=jsonp&callback=?'
+			resolve (url)
+		}
+		else
+		{
+			reject (Error("No tracks found with this query. Try again please."))
+		}	
+	})
+}			
+var myVar = null;
+function myTimer(subtitles,chords) {
+    // var d = new Date();
+    // var t = d.toLocaleTimeString();
+    // console.log(chords)
+    aplayer = document.getElementById("aplayer")  
+
+	if (aplayer.currentTime > 0 && !aplayer.paused) //Player is on
+	{
+		// line1 = ''
+		// line2 = ''
+		// console.log(chords['key'])
+		indx = 0
+		tm = aplayer.currentTime
+		frm = Math.round((tm*44100)/4096) - 1
+		// console.log(frm)
+		currChord = chords[frm] 
+		// console.log(tm)
+		diffPrev = Number.MAX_VALUE
+		diffNow = 0
+		for (var i = 0; i < subtitles.subtitles.subtitle_body.length; i++) 
+		{
+				diffNow = tm - subtitles.subtitles.subtitle_body[i]['time']['total']
+				if (diffNow>0 && diffNow < diffPrev)
+				{
+					diffPrev = diffNow
+					indx = i
+					// console.log(diffNow)
+					// console.log(diffPrev)
+					// console.log('')
+
+				} 
+		}
+		
+		if (indx!= 0)
+		{
+			currentLineId = 'line' + indx
+			line1 = subtitles.subtitles.subtitle_body[indx]['text']
+			document.getElementById(currentLineId).innerHTML = '<p> </p> <p> <b>  <font size = "6">'+line1+'      '+currChord+'</font></b></p> <p> </p>' //+ '<p>'+line2+'</p>';
+
+			previousLineId = 'line' + (indx-1)
+			line0 = subtitles.subtitles.subtitle_body[indx-1]['text']
+			document.getElementById(previousLineId).innerHTML = '<p>'+line0+'</p>' //+ '<p>'+line2+'</p>';
+ 
+		}
+		else
+		{
+			currentLineId = 'line' + indx
+			line1 = subtitles.subtitles.subtitle_body[indx]['text']
+			document.getElementById(currentLineId).innerHTML = '<p> <b> <font size = "6">'+line1+'</font></b></p> <p> </p>' //+ '<p>'+line2+'</p>'; 
+
+		}
+		// line1 = subtitles.subtitles.subtitle_body[indx]['text']
+		// if(indx+1 >= subtitles.subtitles.subtitle_body.length)
+		// {
+		// 	line2 = ''
+		// }
+		// else
+		// {
+		// 	line2 = subtitles.subtitles.subtitle_body[indx+1]['text']
+		// } 	
+		// document.getElementById("lyricsDisplay").innerHTML = '<p>'+line1+'</p>' + '<p>'+line2+'</p>';
+	}
+	else
+	{
+		// document.getElementById("lyricsDisplay").innerHTML = '<p>'+''+'</p>';	
+	}
+    // console.log(document.getElementById("aplayer").controller)
+    
+}
+
+function myStopFunction() {
+	document.getElementById("lyricsDisplay").innerHTML = '<p> </p>';
+    clearInterval(myVar);
+}
+function getUsernameAndLanguage()
+{
+	var seed_query = duolingoAPI_base + 'languages.get?username=' + searchQuery.value + '&format=jsonp&callback=?'
+	seed_query = encodeURI(seed_query)
+	username = searchQuery.value
+	$("#status").text("Fetching duolingo data")
+	// document.getElementById("progress").style.display = "inline-block"
+	console.log(seed_query)
+	getJSON(seed_query).then(function(response){
+		console.log(response)
+		console.log(response['lang'])
+		language['value'] = response['lang']
+		document.getElementById("genre").innerHTML = ''
+
+		for (var i = 0; i < genres["music_genre_list"].length; i++) 
+		{
+			document.getElementById("genre").innerHTML += "<option value=" +genres["music_genre_list"][i]["music_genre"]["music_genre_id"] + ">" + genres["music_genre_list"][i]["music_genre"]["music_genre_name"] + "</option>"						
+		};
+		document.getElementById("genreHolder").style.display = "inline-block"
+		document.getElementById("makePlaylist").style.display = "inline-block"
+		$("#status").text("Your 'current language' on Duolingo is " + language['value'] + ". Please select a genre (or multiple genres with ctrl/cmd) and press ''Make Playlist''")
+		// document.getElementById("progress").style.display = "none"
+
+	})
+	// console.log(words)
+
+}
+
+function getWordsAndMakePlaylist()
+{
+	var seed_query = duolingoAPI_base + 'words.get?username=' + searchQuery.value + '&language='+ language.value[0] + '&format=jsonp&callback=?'
+	seed_query = encodeURI(seed_query)
+	username = searchQuery.value
+	// $("#status").text("Fetching duolingo data")
+	// document.getElementById("progress").style.display = "inline-block"
+	console.log(seed_query)
+	getJSON(seed_query).then(function(response){
+		generatePlaylist(response.words,response.language_code, 10).then(function(track_ids)
+		{
+			console.log('here4')
+			console.log(track_ids)
+
+			if(track_ids.length > 0)
+			{
+				$("#status").text("Making playlist with the tracks found.")
+				// <iframe src="https://embed.spotify.com/?uri=spotify:trackset:PREFEREDTITLE:5Z7ygHQo02SUrFmcgpwsKW,1x6ACsKV4UdWS2FMuPFUiT,4bi73jCM02fMpkI11Lqmfe" frameborder="0" allowtransparency="true"></iframe>
+				localStorage.setItem('track_ids', JSON.stringify(track_ids));
+				localStorage.setItem('playlist-name', 'Musixmatch-Polyglottis'+'-'+language.value[0])
+				var src = "https://embed.spotify.com/?uri=spotify:trackset:"+username+'-'+language.value[0]+ ':'+ track_ids.toString()
+				//console.log(src)
+				$("#status").text("Done!")
+				document.getElementById("SpotifyWidget").style.visibility = "visible"
+				$('#SpotifyWidget').empty()
+				document.getElementById("SpotifyWidget").innerHTML += '<iframe id = "SpotifyWidgetFrame" frameborder="0" allowtransparency="true" width="373" height="453" style = "display:inline"></iframe>'
+				document.getElementById("SpotifyWidgetFrame").src = src
+				//console.log(document.getElementById("SpotifyWidget").innerHTML)
+				
+				have_valid_playlist = true
+				// document.getElementById("progress").style.display = "none"
+				
+				return Promise.resolve()
+			}
+			else
+			{
+				$("#status").text("No tracks found. Either your duolingo vocabulary is not large or no songs in the chosen genre. Please select a more popular genre.")
+				return Promise.reject()
+			}
+		}, function(error){
+				console.log(error)
+				// $("#status").text("No songs found with these search terms. Try again please.")
+				return Promise.reject()
+			}).then(function()
+			{
+				//console.log('love')
+				//document.getElementById("SpotifySave").disabled = false
+				document.getElementById("SpotifySave").style.display = "inline-block"
+
+			})
+
+	})
+	
+}
+
+function getChordsAndLyrics () 
+{
+	words = searchQuery.value//.split(" ")
+	chordDict = ['A','A#','B','C','C#','D','D#','E','F','F#','G','G#','Am','A#m','Bm','Cm','C#m','Dm','D#m','Em','Fm','F#m','Gm','G#m']
+
+	// http://ec2-54-165-48-238.compute-1.amazonaws.com:8080/ws/1.1/macro.subtitles.get?app_id=musixmatch-rd-v1.0&usertoken=74b62c7030d940b2c0e9d3cc97a42f4bc531e9501479cd9e&q_track=radiohead%20creep&f_has_lyrics=1
+	var seed_query = mxmAPI_base_new + '&q_track=' + searchQuery.value + '&f_has_lyrics=1'
+	// var seed_query = echonest_search_base + echonest_api_key + '&combined=' + searchQuery.value + '&bucket=id:musixmatch-WW&limit=true&bucket=tracks' + '&format=jsonp&callback=?'//'&f_has_lyrics=1'
+	//mxmAPI_base + 'matcher.track.get?apikey=' + apiKey + '&q_track=' + searchQuery.value + '&f_has_lyrics=1' + '&format=jsonp&callback=?'
+	// mxmAPI_base_new + 'macro.subtitles.get?app_id=windows-phone-v1.0&usertoken=d504588b033ab537a146ded771c5d4cd29f52c30aed39cd5' + '&q_track=' + searchQuery.value + '&f_has_lyrics=1' + '&format=jsonp&callback=?'//'matcher.track.get?apikey=' + apiKey + '&q_track=' + searchQuery.value + '&f_has_lyrics=1' + '&format=jsonp&callback=?'
+	// http://developer.echonest.com/api/v4/song/search?api_key=UUZDTANXIMNN98YW6&format=json&artist=radiohead&title=creep&bucket=id:musixmatch-WW&limit=true&bucket=tracks
+	var seed_queryURI = encodeURI(seed_query)
+	// console.log(seed_queryURI)
+	// $('#imageContainer').backstretch("destroy",false)
+	// $.backstretch("destroy",false)
+	$('#SpotifyWidget').empty()
+	$('#metadata').empty()
+	//document.getElementById("SpotifyWidget").style.visibility = "hidden"
+	//document.getElementById("SpotifySave").style.display = "none"
+	$("#status").text("Searching Musixmatch for this song")
+	// document.getElementById("progress").style.display = "inline-block"
+	console.log(seed_queryURI)
+	getJSON(seed_queryURI).then(function(response){
+		//console.log(response)
+		//window.resp = response
+		// print response
+		return getMxmAndSpotifyIdFromMacro(response).then(function(track_ids){
+		// return getMxmAndSpotifyIdFromEchonest(response).then(function(track_ids){
+		 	console.log(track_ids)
+		 	if(track_ids[0] != '')
+		 	{
+		 		// url = echonest_base + echonest_api_key + '&id=spotify-WW:track:'+track_ids[1] + '&bucket=audio_summary' + '&format=jsonp&callback=?'//'/tags.images?trackID=' + track_ids[0] + '&format=jsonp&callback=?'
+		 		//url = echonest_base + echonest_api_key + '&id=musixmatch-WW:track:'+track_ids[0] + '&bucket=audio_summary' + '&format=jsonp&callback=?'
+		 		// url = echonest_song_base + echonest_api_key + '&id=musicbrainz:song:'+track_ids[0] + '&bucket=audio_summary' + '&format=jsonp&callback=?'
+		 		url = chordAPI_base +track_ids[0] + '&format=jsonp&callback=?'
+		 	}
+		 	else
+		 	{
+		 		$("#status").text("Musixmatch db problem")
+		 		document.getElementById("progress").style.display = "none"
+
+		 		return Promise.reject()
+		 	}
+		 	url = encodeURI(url)
+		 	$("#status").text("Audio processing")
+		 	console.log(url)
+		 	return getJSON(url).then(function(chordObj){
+		 		$("#status").text("Done")
+		 		console.log(chordObj)
+		 		error = chordObj['error']
+		 		lyricsContainer = document.getElementById("lyricsDisplay")
+		 		if (error !='No')
+		 		{	
+		 			// lyricsContainer.innerHTML = '<p>' +error+'</p> <p>Error please try again</p>'
+		 			$("#status").text(error + ".Error! Please try again.")
+		 			document.getElementById("progress").style.display = "none"
+		 		}
+		 		if (error == 'No')
+		 		{	
+		 			chords = chordObj['chords']
+		 			key = chordObj['key']
+		 			scale = chordObj['scale']
+		 			chordsKey = chordObj['chords_key']
+		 			chordsScale = chordObj['chords_scale']
+		 			keyKey = chordObj['key_key']
+		 			keyScale = chordObj['key_scale']
+	 		
+		 			document.getElementById("progress").style.display = "none"
+		 			document.getElementById("metadata").style.display = "inline"
+		 			audioSrc = chordAPIUrl + '/' + track_ids[0] + '/' + track_ids[0] //+ '.mp3'
+		 		
+		 			var myNode = document.getElementById("aplayer");
+		 			while (myNode.firstChild) {
+		 		    	myNode.removeChild(myNode.firstChild);
+		 			}
+		 		
+		 			var source= document.createElement('source')
+		 			source.type= 'audio/mpeg'
+		 			source.src= audioSrc + '.mp3'
+		 			document.getElementById("aplayer").appendChild(source)
+		 			source= document.createElement('source');
+		 			source.type= 'audio/wav';
+		 			source.src= audioSrc + '.wav';
+		 			document.getElementById("aplayer").appendChild(source);
+
+		 			beatSyncLyrics = audioSrc + '_beatSynced.json'
+		 			getJSON(encodeURI(beatSyncLyrics)).then(function(subtitles)
+		 			{
+		 				console.log(subtitles.subtitles)
+
+		 				
+		 				singTimes = new Array()
+		 				lyricsContainer.innerHTML = '<p> Key extractor ' +key+scale+'<\p><p>ChordsKey '+chordsKey+chordsScale+'<\p><p>Tonal extractor '+keyKey+keyScale+'</p> <br>'
+		 					 			
+		 				for (var i = 0; i < subtitles.subtitles.subtitle_body.length; i++) 
+		 				{
+		 					// lyricsContainer.innerHTML = lyricsContainer.innerHTML + '<p id = ' + 'line' + i + '>' + subtitles.subtitles.subtitle_body[i]['text-transform'] + '</p>'
+		 					lyricsContainer.innerHTML = lyricsContainer.innerHTML + '<p id = ' + 'line' + i + '>' + subtitles.subtitles.subtitle_body[i]['text'] + '</p>'
+
+		 					singTimes.push(subtitles.subtitles.subtitle_body[i]['time']['total'])
+		 				}
+
+		 				chordLines = new Array()
+		 				// console.log(chords.toString())
+		 			
+		 				// chords = chords.toString()
+		 				//console.log(chords.substring(2,10))
+		 				// chords = chords.replace(/,/g,"")//replace(/,/ ,"")
+		 				// console.log(chords)
+		 				// console.log(singTimes)
+		 				// console.log(chords.length)
+		 				// for (var i = 0; i < singTimes.length -1; i++) 
+		 				// {
+		 				// 	startFrame = Math.round((singTimes[i]*44100)/4096) - 1
+		 				// 	endFrame = Math.round((singTimes[i+1]*44100)/4096) - 1
+		 				// 	if(startFrame < 0) 
+		 				// 	{
+		 				// 		startFrame = 0
+		 				// 	}
+		 				// 	if(endFrame < 0) 
+		 				// 	{
+		 				// 		endFrame = startFrame + 1
+		 				// 	}
+		 				// 	//lineLength = subtitles.subtitles.subtitle_body[i]['text'].length
+		 				// 	console.log(startFrame)
+		 				// 	console.log(endFrame)
+		 				// 	chordLine = subtitles.subtitles.subtitle_body[i]['text']
+		 				// 	chordLine[0] = chords[startFrame]
+		 				// 	chordLine[chordLine.length - 1] = chords[endFrame]
+		 				// 	chordLyric = new Array()
+		 				// 	chordLyric.push(chords[startFrame])
+		 				
+		 				// 	for (var j = 1; j < chordLine.length-1; j++) 
+		 				// 	{
+		 				// 		//chordLine[i] = ''j
+		 				// 		chordOccurences = new Array()
+		 				// 		// console.log(typeof(chords))
+		 				// 		// console.log(Math.round((j-1)*(endFrame-startFrame)/chordLine.length))
+		 				// 		// console.log(Math.round((j)*(endFrame-startFrame)/chordLine.length))
+		 				// 		temp = chords.splice(Math.round((j-1)*(endFrame-startFrame)/chordLine.length) , Math.round((j)*(endFrame-startFrame)/chordLine.length)) 
+		 				// 		// temp = temp.toString()
+		 					
+		 				// 		// console.log(temp)
+		 				// 		for (var k = 0; k < chordDict.length; k++) {
+		 				// 			// console.log(temp.split('/'+chordDict[k]+'/'+'g'))
+		 				// 			chordOccurences.push(countOccurences(temp,chordDict[k]))
+		 				// 		}
+		 				// 		// console.log(chordOccurences)
+		 				// 		maxIdx = chordOccurences.indexOf(Math.max.apply(Math, chordOccurences))
+		 				// 		chordLyric.push(chordDict[maxIdx])
+		 				// 		console.log(chordDict[maxIdx])
+		 				// 		// for (var k = Math.round((j-1)*(endFrame-startFrame)/chordLine.length); k < Math.round((j-1)*(endFrame-startFrame)/chordLine.length); k++) 
+		 				// 		// {
+		 							
+		 				// 		// }
+
+		 				// 	}
+		 				// 	console.log(chordLine)
+		 				// 	console.log(chordLyric)
+		 				// 	chordLines.push(chordLyric)
+
+		 				// };
+		 				console.log(chords)
+		 				myVar = setInterval(function(){myTimer(subtitles,chords)}, 200);
+		 			})
+				
+		 			// document.getElementById("aplayer").src = audioSrc
+		 			// document.getElementById("audioDiv").style.visibility = 'display:inline'
+		 			console.log(audioSrc)
+		 			// try
+		 			// {
+		 			// 	//if (Number(echonest_response.response.track.audio_summary.instrumentalness) >= 0.8) {document.getElementById("metadata").innerHTML += 'Instrumental'}
+		 			// 	if (Number(echonest_response.response.songs[0].audio_summary.instrumentalness) >= 0.8) {document.getElementById("metadata").innerHTML += 'Instrumental'}
+		 			// 	else {document.getElementById("metadata").innerHTML += 'Not instrumental - has human voices'}
+		 			// 	$("#status").text("")
+		 			// }
+
+		 			// catch (error)
+		 			// {
+		 			// 	document.getElementById("metadata").innerHTML += "Echonest doesn't have this data yet"
+		 			// 	$("#status").text("")
+		 			// }
+		 			// if (Number(echonest_response.response.track.audio_summary.instrumentalness) <= 0.5) {document.getElementById("metadata").innerHTML += 'Not instrumental'}	
+
+
+		 			// document.getElementById("metadata").innerHTML += 'instrumentalness = ' + JSON.stringify(echonest_response.response.track.audio_summary.instrumentalness,null,' ') //'<pre><code>' + JSON.stringify(echonest_response.response.track,null,' ') + '</pre></code>'//'<pre><code>' + echonest_response + '</pre></code>'
+
+		 			// if(track_ids[1] != "")
+		 			// {
+		 			// 	var src = "https://embed.spotify.com/?uri=spotify:track:"+ track_ids[1].toString()
+		 			// 	document.getElementById("SpotifyWidget").style.visibility = "visible"
+		 			// 	document.getElementById("SpotifyWidget").innerHTML += '<iframe id = "SpotifyWidgetFrame" frameborder="0" allowtransparency="true" width="300" height="80" style = "display:inline"></iframe>'
+		 			// 	document.getElementById("SpotifyWidgetFrame").src = src
+		 			// 	console.log(document.getElementById("SpotifyWidgetFrame"))
+		 			// }
+		 			// //console.log(src)
+		 			// else
+		 			// {
+		 			// 	$("#status").text("Spotify track not found")
+		 			// }
+		 		}
+		 	})
+		 	
+		 }, function(error){
+		 	//console.log('123')
+		 	$("#status").text("Musixmatch macro method 404")
+		 	document.getElementById("progress").style.display = "none"
+
+		 })
+		// 	url = tagAPI_base + '/tags.images?trackID=' + track_ids[0] + '&format=jsonp&callback=?'
+		// 	url = encodeURI(url)
+		// 	$("#status").text("Searching for images (please try again if stuck here)")
+		// 	console.log(url)
+		// 	return getJSON(url).then(function(response){
+		// 		$("#status").text("Done")
+		// 		console.log('2')
+		// 		document.getElementById("progress").style.display = "none"
+		// 		if(track_ids[1] != "")
+		// 		{
+		// 			var src = "https://embed.spotify.com/?uri=spotify:track:"+ track_ids[1].toString()
+		// 			document.getElementById("SpotifyWidget").style.visibility = "visible"
+		// 			document.getElementById("SpotifyWidget").innerHTML += '<iframe id = "SpotifyWidgetFrame" frameborder="0" allowtransparency="true" width="300" height="80" style = "display:inline"></iframe>'
+		// 			document.getElementById("SpotifyWidgetFrame").src = src
+		// 			console.log(document.getElementById("SpotifyWidgetFrame"))
+		// 		}
+		// 		//console.log(src)
+		// 		else
+		// 		{
+		// 			$("#status").text("Spotify track not found")
+		// 		}
+		// 		photos = []
+		// 		response.tags.forEach(function(data){
+		// 			photo_urls = data.photo_urls
+		// 			photo_urls.forEach(function(photo){
+		// 				photos.push(photo)
+		// 			})
+		// 		})
+		// 		// console.log(photos)
+		// 		//document.getElementById("ImageDisplay").style.display = "inline-block"
+		// 		// $('#imageContainer').backstretch(photos, {duration: 5000, fade: 1000, centeredX: true, centeredY: true});
+		// 		$.backstretch(photos, {duration: 8000, fade: 1000, centeredX: true, centeredY: true});
+		// 		$("#status").text("")
+		// 		return Promise.resolve()
+		// 	})
+
+		// }, function(error){
+		// 	console.log(error)
+		// 	$("#status").text("No tracks found with this query. Try again please.")
+		// 	document.getElementById("progress").style.display = "none"
+		// 	// photos = ["http://i.imgur.com/83ghVct.jpg"]
+		// 	// $('#imageContainer').backstretch(photos, {duration: 5000, fade: 1000, centeredX: true, centeredY: true});
+		// 	// $.backstretch(photos, {duration: 5000, fade: 1000, centeredX: true, centeredY: true});
+		// 	return Promise.reject()
+
+		// })
+		// //console.log
+	})
+}
+
+
+$("#username").keyup(function(event) {
+    if (event.keyCode == 13) {
+    	// myStopFunction();
+    	$('#SpotifyWidget').empty()
+    	document.getElementById("SpotifySave").style.display = "none"
+    	document.getElementById("makePlaylist").style.display = "none"
+    	document.getElementById("genreHolder").style.display = "none"
+    	document.getElementById("status").style.display = "inline-block"
+        getUsernameAndLanguage();
+        // $("#status").text("Please select language for songs in playlist")
+        // document.getElementById("progress").style.display = "none"
+    }
+});
+
+MakePlaylist.onclick = function(e){
+	$('#SpotifyWidget').empty()
+	$("#status").text("Searching your vocabulary in this language")
+	document.getElementById("SpotifySave").style.display = "none"
+	getWordsAndMakePlaylist();
+}
+
+SpotifySave.onclick = function(e){
+  loginWithSpotify()
+}
+
+
+// GetImages.onclick = function(e){
+// 	getTagsAndImages()
+// }
+
+// $(window).blur(function(e){
+//     //$('#result').text('Clicked out of the window or on the iframe');
+//     console.log('Clicked out of the window or on the iframe')
+// })
+// SpotifySave.onclick = function(e){
+//   loginWithSpotify()
+// }
+
+
+</script>
+
+<script>
+  (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+  (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+  m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+  })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+  ga('create', 'UA-53134539-1', 'auto');
+  ga('send', 'pageview');
+
+</script>
+
+</script>
